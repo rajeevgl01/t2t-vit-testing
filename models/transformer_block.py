@@ -11,6 +11,7 @@ import torch.nn as nn
 import numpy as np
 from timm.models.layers import DropPath
 
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -29,6 +30,7 @@ class Mlp(nn.Module):
         x = self.drop(x)
         return x
 
+
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
@@ -44,17 +46,33 @@ class Attention(nn.Module):
 
     def forward(self, x):
         B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C //
+                                  self.num_heads).permute(2, 0, 3, 1, 4)
+        print("qkv shape")
+        print(qkv.shape)
+
         q, k, v = qkv[0], qkv[1], qkv[2]
 
+        print("q shape")
+        print(q.shape)
+
         attn = (q @ k.transpose(-2, -1)) * self.scale
+
+        print("attn shape")
+        print(attn.shape)
+
         attn = attn.softmax(dim=-1)
+
+        print("attn shape")
+        print(attn.shape)
+
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+
 
 class Block(nn.Module):
 
@@ -64,10 +82,12 @@ class Block(nn.Module):
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
             dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.drop_path = DropPath(
+            drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim,
+                       act_layer=act_layer, drop=drop)
 
     def forward(self, x):
         x = x + self.drop_path(self.attn(self.norm1(x)))
@@ -81,7 +101,8 @@ def get_sinusoid_encoding(n_position, d_hid):
     def get_position_angle_vec(position):
         return [position / np.power(10000, 2 * (hid_j // 2) / d_hid) for hid_j in range(d_hid)]
 
-    sinusoid_table = np.array([get_position_angle_vec(pos_i) for pos_i in range(n_position)])
+    sinusoid_table = np.array([get_position_angle_vec(pos_i)
+                              for pos_i in range(n_position)])
     sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])  # dim 2i
     sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])  # dim 2i+1
 
